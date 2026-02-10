@@ -4,7 +4,7 @@ import structlog
 from fastapi import FastAPI
 
 from app.config import settings
-from app.routers import execute, sessions
+from app.routers import execute, sessions, workspace
 
 structlog.configure(
     processors=[
@@ -24,6 +24,7 @@ app = FastAPI(
 
 app.include_router(execute.router)
 app.include_router(sessions.router)
+app.include_router(workspace.router)
 
 
 @app.get("/health")

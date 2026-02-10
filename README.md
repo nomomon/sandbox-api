@@ -68,6 +68,7 @@ Set env vars as needed (e.g. `REDIS_HOST=localhost`, `API_KEYS=dev-key`).
 | `ALLOWED_COMMANDS` | `ls,cat,echo,pwd,id,whoami,sh` | Whitelist of allowed command binaries |
 | `CLEANUP_INTERVAL_SECONDS` | `60` | How often cleanup runs |
 | `CLEANUP_MAX_CONTAINER_AGE_SECONDS` | `900` | Remove containers older than this |
+| `WORKSPACE_MAX_FILE_SIZE_BYTES` | `1048576` (1 MiB) | Max size for workspace read/write; `0` = no limit |
 
 See `.env.example` for the full list.
 
@@ -78,6 +79,17 @@ See `.env.example` for the full list.
 - **DELETE /sessions/{session_id}** — Tear down session and container.
 - **GET /health** — Liveness.
 - **GET /ready** — Readiness.
+
+### Workspace (agent file tools)
+
+All paths are relative to the session container’s `/workspace`. Path traversal (`..`) is rejected. Same auth and rate limiting as the rest of the API.
+
+| Method | Endpoint | Query | Description |
+|--------|----------|-------|-------------|
+| GET | `/sessions/{session_id}/workspace` | `path` (optional) | List directory entries. Returns `{"entries": [{"name", "type": "file" or "dir"}]}`. |
+| GET | `/sessions/{session_id}/workspace/content` | `path` (required) | Read file. Returns `{"content": "...", "encoding": "utf8"\|"base64"}`. |
+| PUT | `/sessions/{session_id}/workspace/content` | `path` (required) | Write file. Body: raw bytes or JSON `{"content": "..."}`. Creates parent dirs. |
+| DELETE | `/sessions/{session_id}/workspace` | `path` (required) | Delete file or directory. |
 
 ## Security notes
 

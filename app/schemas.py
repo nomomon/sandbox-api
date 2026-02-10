@@ -20,3 +20,31 @@ class CommandResponse(BaseModel):
     exit_code: int
     execution_time: float
     container_id: str
+
+
+# Workspace (agent file tools)
+
+class WorkspaceEntry(BaseModel):
+    """Single entry in a directory listing."""
+
+    name: str
+    type: str  # "file" | "dir"
+
+
+class WorkspaceListResponse(BaseModel):
+    """Response for GET /sessions/{session_id}/workspace."""
+
+    entries: list[WorkspaceEntry]
+
+
+class WorkspaceContentResponse(BaseModel):
+    """Response for GET /sessions/{session_id}/workspace/content."""
+
+    content: str
+    encoding: str  # "utf8" | "base64"
+
+
+class WriteRequest(BaseModel):
+    """Optional JSON body for PUT /sessions/{session_id}/workspace/content."""
+
+    content: str = ""

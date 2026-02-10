@@ -57,6 +57,9 @@ class Settings(BaseSettings):
     # Command whitelist (comma-separated binaries, e.g. "ls,cat,echo,pwd")
     allowed_commands: str = "ls,cat,echo,pwd,id,whoami,sh"
 
+    # Workspace file tools (agent): max size per read/write in bytes; 0 = no limit
+    workspace_max_file_size_bytes: int = 1 << 20  # 1 MiB
+
     @property
     def redis_url(self) -> str:
         if self.redis_password:
