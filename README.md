@@ -78,14 +78,19 @@ Default `ALLOWED_COMMANDS` includes: `ls`, `cat`, `echo`, `pwd`, `id`, `whoami`,
 | `CLEANUP_INTERVAL_SECONDS` | `60` | How often cleanup runs |
 | `CLEANUP_MAX_CONTAINER_AGE_SECONDS` | `900` | Remove containers older than this |
 | `WORKSPACE_MAX_FILE_SIZE_BYTES` | `1048576` (1 MiB) | Max size for workspace read/write; `0` = no limit |
+| `WORKSPACE_PERSIST_VOLUMES` | `false` | If `true`, `/workspace` is a named volume per session; files persist after container expiry until session is explicitly deleted |
 
 See `.env.example` for the full list.
+
+### Workspace persistence (optional)
+
+Set `WORKSPACE_PERSIST_VOLUMES=true` to store each session’s `/workspace` in a **named Docker volume** instead of tmpfs. The environment (container) can go away after the session TTL or a restart, but the files remain. When the same user creates a session with the same `session_id` again, the new container mounts the same volume and the workspace is restored. The volume is removed only when you call **DELETE /sessions/{session_id}**. Useful for agents or users who want to “save and resume” work across restarts.
 
 ## API
 
 - **POST /execute** — Execute a command in the session’s container. Body: `command`, `session_id`, optional `timeout`, `working_dir`. Requires auth (Bearer JWT or `X-API-Key`).
 - **POST /sessions** — Create a session (body: `{"session_id": "..."}`). Idempotent.
-- **DELETE /sessions/{session_id}** — Tear down session and container.
+- **DELETE /sessions/{session_id}** — Tear down session and container; if workspace persistence is enabled, the session’s volume is also removed.
 - **GET /health** — Liveness.
 - **GET /ready** — Readiness.
 
