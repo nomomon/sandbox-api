@@ -108,9 +108,9 @@ All paths are relative to the session container’s `/workspace`. Path traversal
 
 ## MCP server
 
-The same app exposes an **MCP (Model Context Protocol) server** at **`http://localhost:8000/mcp`**, so LLM clients (e.g. Cursor, Claude Code) can use the sandbox as tools.
+The same app exposes an **MCP (Model Context Protocol) server** at **`http://localhost:8000/mcp/`**, so LLM clients (e.g. Cursor, Claude Code) can use the sandbox as tools.
 
-- **URL**: `http://localhost:8000/mcp` (when running the API on port 8000).
+- **URL**: `http://localhost:8000/mcp/` (when running the API on port 8000). Use the trailing slash so Streamable HTTP and SSE connect correctly.
 - **Tools**: `create_session`, `delete_session`, `execute`, `workspace_list`, `workspace_read`, `workspace_write`, `workspace_delete` — same capabilities as the REST API, with session-scoped parameters.
 - **Auth**: Send the same credentials as the REST API on each request: **`X-API-Key`** header or **`Authorization: Bearer <JWT>`**. The MCP server resolves the user from these headers and applies the same rate limits and session ownership rules.
 
@@ -122,7 +122,7 @@ To use the sandbox MCP server in Cursor, add an entry to your MCP config (e.g. *
 {
   "mcpServers": {
     "sandbox": {
-      "url": "http://localhost:8000/mcp",
+      "url": "http://localhost:8000/mcp/",
       "headers": {
         "X-API-Key": "your-api-key"
       }
