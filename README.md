@@ -15,6 +15,13 @@ Execution containers use:
 - No network, no new privileges, all capabilities dropped
 - Non-root user (UID 1000), resource limits (memory, CPU, pids, ulimits)
 
+The default image is **`python:3.12-slim`**, so agents can run Python, pip, and use common CLI tools. For a smaller Alpine-based image with Python, build the agent image and set `CONTAINER_IMAGE`:
+
+```bash
+docker build -f Dockerfile.agent -t sandbox-api-agent:latest .
+# Then set CONTAINER_IMAGE=sandbox-api-agent:latest in .env
+```
+
 ## Quick start
 
 ### With Docker Compose
@@ -62,10 +69,12 @@ Set env vars as needed (e.g. `REDIS_HOST=localhost`, `API_KEYS=dev-key`).
 | `RATE_LIMIT_REQUESTS` | `100` | Max requests per user per window |
 | `RATE_LIMIT_WINDOW_SECONDS` | `60` | Rate limit window in seconds |
 | `SESSION_TTL_SECONDS` | `600` | Session (and container) TTL; refreshed on each execute |
-| `CONTAINER_IMAGE` | `alpine:latest` | Base image for execution containers |
+| `CONTAINER_IMAGE` | `python:3.12-slim` | Base image for execution containers (Python for agent/MCP use) |
 | `CONTAINER_MEM_LIMIT` | `256m` | Memory limit per container |
 | `DEFAULT_EXEC_TIMEOUT_SECONDS` | `30` | Default command timeout |
-| `ALLOWED_COMMANDS` | `ls,cat,echo,pwd,id,whoami,sh` | Whitelist of allowed command binaries |
+| `ALLOWED_COMMANDS` | (see below) | Whitelist of allowed command binaries |
+
+Default `ALLOWED_COMMANDS` includes: `ls`, `cat`, `echo`, `pwd`, `id`, `whoami`, `sh`, `bash`, `python`, `python3`, `pip`, `pip3`, `git`, `curl`, `wget`, `mkdir`, `cp`, `mv`, `rm`, `grep`, `find`, `head`, `tail`, `sort`, `uniq`, `xargs`, `env`, `basename`, `dirname`, `test`, `diff`, `patch`, `tar`.
 | `CLEANUP_INTERVAL_SECONDS` | `60` | How often cleanup runs |
 | `CLEANUP_MAX_CONTAINER_AGE_SECONDS` | `900` | Remove containers older than this |
 | `WORKSPACE_MAX_FILE_SIZE_BYTES` | `1048576` (1 MiB) | Max size for workspace read/write; `0` = no limit |

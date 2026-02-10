@@ -1,0 +1,30 @@
+# Agent sandbox image: Python + common tools for MCP/agent execution.
+# Build: docker build -f Dockerfile.agent -t sandbox-api-agent:latest .
+# Use: set CONTAINER_IMAGE=sandbox-api-agent:latest (after building).
+
+FROM alpine:3.19
+
+RUN apk add --no-cache \
+    python3 \
+    py3-pip \
+    git \
+    curl \
+    bash \
+    coreutils \
+    findutils \
+    grep \
+    # So pip installs work (build deps for some wheels)
+    gcc \
+    musl-dev \
+    python3-dev \
+    libffi-dev \
+    # Optional but useful
+    ca-certificates \
+    && rm -rf /var/cache/apk/*
+
+# Symlinks for common invocations (allowed_commands can use "python", "pip")
+RUN ln -sf python3 /usr/bin/python && ln -sf pip3 /usr/bin/pip
+
+# No USER: orchestrator runs as 1000:1000; /workspace and /tmp are tmpfs.
+
+WORKDIR /workspace

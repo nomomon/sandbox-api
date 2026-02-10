@@ -34,8 +34,8 @@ class Settings(BaseSettings):
     # Session
     session_ttl_seconds: int = 600
 
-    # Container execution
-    container_image: str = "alpine:latest"
+    # Container execution (default: Python image for agent/MCP use)
+    container_image: str = "python:3.12-slim"
     container_mem_limit: str = "256m"
     container_memswap_limit: str = "256m"
     container_cpu_period: int = 100_000
@@ -54,8 +54,14 @@ class Settings(BaseSettings):
     cleanup_interval_seconds: int = 60
     cleanup_max_container_age_seconds: int = 900  # 15 minutes
 
-    # Command whitelist (comma-separated binaries, e.g. "ls,cat,echo,pwd")
-    allowed_commands: str = "ls,cat,echo,pwd,id,whoami,sh"
+    # Command whitelist (comma-separated binaries for agent/sandbox use)
+    allowed_commands: str = (
+        "ls,cat,echo,pwd,id,whoami,sh,bash,"
+        "python,python3,pip,pip3,"
+        "git,curl,wget,"
+        "mkdir,cp,mv,rm,grep,find,head,tail,sort,uniq,xargs,env,basename,dirname,"
+        "test,diff,patch,tar"
+    )
 
     # Workspace file tools (agent): max size per read/write in bytes; 0 = no limit
     workspace_max_file_size_bytes: int = 1 << 20  # 1 MiB
