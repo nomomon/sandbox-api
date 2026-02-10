@@ -128,6 +128,61 @@ To use the sandbox MCP server in Cursor, add an entry to your MCP config (e.g. *
 
 Replace `your-api-key` with a key from your `API_KEYS` env (or use `Authorization: Bearer <token>` with a JWT). Ensure the API is running (e.g. `uvicorn app.main:app --host 0.0.0.0 --port 8000`) before connecting.
 
+## Hosting
+
+You can host this API on any server that has **Docker** and (optionally) **Redis**—the same stack you run locally.
+
+### Requirements
+
+- **Docker** on the host (the API and cleanup worker need the Docker socket to create execution containers).
+- **Redis** for sessions and rate limiting. Use the included `redis` service in `docker-compose.yml`, or an external Redis (e.g. managed Redis).
+- **Auth**: Set `JWT_SECRET` and/or `API_KEYS` in production; do not use the default secret.
+
+### Deploy with Docker Compose
+
+1. On a VPS or VM (e.g. DigitalOcean, Linode, EC2, Hetzner) with Docker and Docker Compose installed, clone the repo and configure:
+
+   ```bash
+   cp .env.example .env
+   # Set API_KEYS=your-secret-key and/or JWT_SECRET=...
+   ```
+
+2. Start the stack (API + Redis + cleanup worker):
+
+   ```bash
+   docker compose up -d --build
+   ```
+
+3. Expose the API:
+   - **Direct**: Port 8000 is already published. Use a firewall to restrict access; put the app behind a reverse proxy for HTTPS.
+   - **Recommended**: Put **nginx**, **Caddy**, or **Traefik** in front with TLS (e.g. Let’s Encrypt). Proxy to `http://api:8000` (or `http://localhost:8000` if the proxy runs on the same host).
+
+4. (Optional) Pre-pull the execution image so the first run is fast:
+
+   ```bash
+   docker pull python:3.12-slim
+   # If using Dockerfile.agent: docker build -f Dockerfile.agent -t sandbox-api-agent:latest .
+   ```
+
+### MCP when hosted
+
+Point Cursor (or other MCP clients) at your public URL instead of localhost:
+
+```json
+{
+  "mcpServers": {
+    "sandbox": {
+      "url": "https://your-domain.com/mcp",
+      "headers": {
+        "X-API-Key": "your-api-key"
+      }
+    }
+  }
+}
+```
+
+Use HTTPS in production so API keys are not sent over plain HTTP.
+
 ## Security notes
 
 1. **Auth**: Use strong `JWT_SECRET` or `API_KEYS` in production; never rely on defaults.
