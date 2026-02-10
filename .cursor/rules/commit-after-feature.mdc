@@ -1,0 +1,16 @@
+---
+description: Commit to git after finishing each feature
+alwaysApply: true
+---
+
+# Commit After Feature
+
+When you finish implementing a feature (or a logical, complete unit of work):
+
+1. **Stage** the relevant changes: `git add` the files you created or modified.
+2. **Commit** with a clear, present-tense message that describes what was done, e.g.:
+   - "Add user login endpoint"
+   - "Implement dark mode toggle in settings"
+   - "Fix null check in payment validation"
+
+Do not batch unrelated changes into one commit. One feature or fix per commit.
