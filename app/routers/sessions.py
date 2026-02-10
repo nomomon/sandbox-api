@@ -36,7 +36,7 @@ def delete_session(
     user_id: str = Depends(get_current_user_id),
     orchestrator: ContainerOrchestrator = Depends(get_orchestrator),
 ):
-    """Tear down session: stop container and remove from Redis."""
+    """Tear down session: stop container, remove workspace volume (if any), and remove from Redis."""
     session = orchestrator.session_manager.get_session(session_id)
     if not session:
         return {"status": "deleted", "session_id": session_id}
@@ -49,5 +49,6 @@ def delete_session(
             container.remove(force=True)
         except Exception:
             pass
+    orchestrator.remove_workspace_volume(user_id, session_id)
     orchestrator.session_manager.delete_session(session_id)
     return {"status": "deleted", "session_id": session_id}

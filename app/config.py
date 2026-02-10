@@ -66,6 +66,11 @@ class Settings(BaseSettings):
     # Workspace file tools (agent): max size per read/write in bytes; 0 = no limit
     workspace_max_file_size_bytes: int = 1 << 20  # 1 MiB
 
+    # Persist /workspace in a named volume per session so files survive container expiry.
+    # When the container is removed (TTL or restart), the volume remains; reusing the same
+    # session_id mounts the same volume. Volume is deleted only on explicit DELETE /sessions/{id}.
+    workspace_persist_volumes: bool = False
+
     @property
     def redis_url(self) -> str:
         if self.redis_password:

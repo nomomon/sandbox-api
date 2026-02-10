@@ -7,7 +7,7 @@ from datetime import datetime, timezone
 from typing import Any
 
 import docker
-from docker.types import Ulimit
+from docker.types import Mount, Ulimit
 
 from app.config import settings
 from app.session_manager import SessionManager
@@ -18,10 +18,20 @@ SESSION_LABEL = "exec.session_id"
 USER_LABEL = "exec.user_id"
 CREATED_AT_LABEL = "exec.created_at"
 
+# Prefix for per-session workspace volumes (when workspace_persist_volumes is True)
+WORKSPACE_VOLUME_PREFIX = "ws-"
+
 
 def _sanitize_name(s: str) -> str:
     """Allow only alphanumeric and hyphen for container names."""
     return re.sub(r"[^a-zA-Z0-9-]", "-", s)[:64]
+
+
+def _workspace_volume_name(user_id: str, session_id: str) -> str:
+    """Deterministic Docker volume name for a session's workspace. Safe for [a-zA-Z0-9_.-]."""
+    safe = re.sub(r"[^a-zA-Z0-9_.-]", "_", user_id)[:40]
+    safe_sid = re.sub(r"[^a-zA-Z0-9_.-]", "_", session_id)[:40]
+    return f"{WORKSPACE_VOLUME_PREFIX}{safe}-{safe_sid}"
 
 
 class ContainerOrchestrator:
@@ -39,6 +49,21 @@ class ContainerOrchestrator:
     def _container_config(self, session_id: str, user_id: str) -> dict[str, Any]:
         now = datetime.now(timezone.utc).isoformat()
         name = f"exec-{_sanitize_name(user_id)}-{_sanitize_name(session_id)}"
+
+        tmpfs: dict[str, str] = {
+            "/tmp": f"rw,noexec,nosuid,size={settings.container_tmpfs_tmp_size}",
+        }
+        mounts: list[Mount] = []
+        if settings.workspace_persist_volumes:
+            volume_name = _workspace_volume_name(user_id, session_id)
+            mounts.append(
+                Mount(target="/workspace", source=volume_name, type="volume")
+            )
+        else:
+            tmpfs["/workspace"] = (
+                f"rw,noexec,nosuid,size={settings.container_tmpfs_workspace_size}"
+            )
+
         return {
             "image": settings.container_image,
             "name": name,
@@ -54,10 +79,8 @@ class ContainerOrchestrator:
             "cpu_period": settings.container_cpu_period,
             "cpu_quota": settings.container_cpu_quota,
             "pids_limit": settings.container_pids_limit,
-            "tmpfs": {
-                "/tmp": f"rw,noexec,nosuid,size={settings.container_tmpfs_tmp_size}",
-                "/workspace": f"rw,noexec,nosuid,size={settings.container_tmpfs_workspace_size}",
-            },
+            "tmpfs": tmpfs,
+            "mounts": mounts,
             "ulimits": [
                 Ulimit(
                     name="nofile",
@@ -102,6 +125,17 @@ class ContainerOrchestrator:
         container.start()
         self.session_manager.create_session(session_id, user_id, container.id)
         return container
+
+    def remove_workspace_volume(self, user_id: str, session_id: str) -> None:
+        """Remove the named volume for this session (when workspace_persist_volumes is used)."""
+        if not settings.workspace_persist_volumes:
+            return
+        name = _workspace_volume_name(user_id, session_id)
+        try:
+            vol = self.client.volumes.get(name)
+            vol.remove()
+        except docker.errors.NotFound:
+            pass
 
     def execute_in_container(
         self,
