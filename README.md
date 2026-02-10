@@ -84,11 +84,12 @@ See `.env.example` for the full list.
 
 All paths are relative to the session container’s `/workspace`. Path traversal (`..`) is rejected. Same auth and rate limiting as the rest of the API.
 
-| Method | Endpoint | Query | Description |
-|--------|----------|-------|-------------|
+| Method | Endpoint | Query / Body | Description |
+|--------|----------|---------------|-------------|
 | GET | `/sessions/{session_id}/workspace` | `path` (optional) | List directory entries. Returns `{"entries": [{"name", "type": "file" or "dir"}]}`. |
 | GET | `/sessions/{session_id}/workspace/content` | `path` (required) | Read file. Returns `{"content": "...", "encoding": "utf8"\|"base64"}`. |
 | PUT | `/sessions/{session_id}/workspace/content` | `path` (required) | Write file. Body: raw bytes or JSON `{"content": "..."}`. Creates parent dirs. |
+| POST | `/sessions/{session_id}/workspace/upload` | `path` (optional) | Upload a file (multipart form, field `file`). Use `path` to set destination; otherwise the original filename is used. Returns `{"path", "session_id", "size"}` (201). |
 | DELETE | `/sessions/{session_id}/workspace` | `path` (required) | Delete file or directory. |
 
 ## MCP server

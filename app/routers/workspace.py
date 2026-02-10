@@ -1,7 +1,8 @@
 """Workspace file tools: list, read, write, delete within a session's /workspace."""
 
+import re
 import structlog
-from fastapi import APIRouter, Depends, Query, Request, Response
+from fastapi import APIRouter, Depends, File, Query, Request, Response, UploadFile
 
 from app.auth.deps import get_current_user_id
 from app.config import settings
@@ -92,6 +93,37 @@ async def write_workspace_content(
         content = await request.body()
     workspace_write(container, resolved, content, max_size=max_size)
     return Response(status_code=204)
+
+
+def _sanitize_upload_filename(filename: str) -> str:
+    """Use only the base name and strip path/special chars. Returns non-empty safe name."""
+    if not filename or not filename.strip():
+        return "upload"
+    base = filename.strip().split("/")[-1].split("\\")[-1]
+    # Allow alphanumeric, hyphen, underscore, dot
+    safe = re.sub(r"[^\w.\-]", "_", base)
+    return safe if safe else "upload"
+
+
+@router.post("/{session_id}/workspace/upload", status_code=201)
+async def upload_workspace_file(
+    session_id: str,
+    file: UploadFile = File(..., description="File to upload into the session workspace"),
+    path: str | None = Query(default=None, description="Path relative to /workspace (default: filename)"),
+    user_id: str = Depends(get_current_user_id),
+    orchestrator: ContainerOrchestrator = Depends(get_orchestrator),
+):
+    """Upload a file into the session's workspace (e.g. for the agent to access). Uses multipart form."""
+    target = (path or "").strip() or _sanitize_upload_filename(file.filename or "")
+    container, resolved = _get_container_and_path(session_id, target, user_id, orchestrator)
+    max_size = settings.workspace_max_file_size_bytes
+    content = await file.read()
+    workspace_write(container, resolved, content, max_size=max_size)
+    return {
+        "path": resolved,
+        "session_id": session_id,
+        "size": len(content),
+    }
 
 
 @router.delete("/{session_id}/workspace")
