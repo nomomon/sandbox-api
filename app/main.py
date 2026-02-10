@@ -4,6 +4,7 @@ import structlog
 from fastapi import FastAPI
 
 from app.config import settings
+from app.mcp_server import mcp
 from app.routers import execute, sessions, workspace
 
 structlog.configure(
@@ -17,14 +18,18 @@ structlog.configure(
     logger_factory=structlog.PrintLoggerFactory(),
 )
 
+mcp_app = mcp.http_app(path="/")
+
 app = FastAPI(
     title=settings.app_name,
     debug=settings.debug,
+    lifespan=mcp_app.lifespan,
 )
 
 app.include_router(execute.router)
 app.include_router(sessions.router)
 app.include_router(workspace.router)
+app.mount("/mcp", mcp_app)
 
 
 @app.get("/health")

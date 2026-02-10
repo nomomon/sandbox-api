@@ -48,6 +48,35 @@ def get_user_id_from_jwt(credentials: HTTPAuthorizationCredentials | None) -> st
     return None
 
 
+def get_user_id_from_headers(headers: dict[str, str]) -> str:
+    """
+    Resolve user from a headers dict (e.g. from MCP CurrentHeaders()).
+    Raises HTTPException 401 if neither API key nor valid Bearer JWT is present.
+    """
+    api_key = None
+    for k, v in (headers or {}).items():
+        if k.lower() == settings.api_key_header.lower():
+            api_key = v
+            break
+    user_id = get_user_id_from_api_key(api_key)
+    if user_id:
+        return user_id
+    auth = (headers or {}).get("authorization") or (headers or {}).get("Authorization") or ""
+    if auth.startswith("Bearer ") or auth.startswith("bearer "):
+        token = auth[7:].strip()
+        try:
+            payload = _decode_jwt(token)
+            user = payload.get("sub") or payload.get("user_id") or payload.get("uid")
+            if user:
+                return str(user)
+        except JWTError:
+            pass
+    raise HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Missing or invalid authentication (API key or Bearer token)",
+    )
+
+
 async def get_current_user_id(
     api_key: str | None = Depends(_api_key_header),
     credentials: HTTPAuthorizationCredentials | None = Depends(_bearer),

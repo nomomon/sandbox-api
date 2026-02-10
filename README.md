@@ -91,6 +91,33 @@ All paths are relative to the session container’s `/workspace`. Path traversal
 | PUT | `/sessions/{session_id}/workspace/content` | `path` (required) | Write file. Body: raw bytes or JSON `{"content": "..."}`. Creates parent dirs. |
 | DELETE | `/sessions/{session_id}/workspace` | `path` (required) | Delete file or directory. |
 
+## MCP server
+
+The same app exposes an **MCP (Model Context Protocol) server** at **`http://localhost:8000/mcp`**, so LLM clients (e.g. Cursor, Claude Code) can use the sandbox as tools.
+
+- **URL**: `http://localhost:8000/mcp` (when running the API on port 8000).
+- **Tools**: `create_session`, `delete_session`, `execute`, `workspace_list`, `workspace_read`, `workspace_write`, `workspace_delete` — same capabilities as the REST API, with session-scoped parameters.
+- **Auth**: Send the same credentials as the REST API on each request: **`X-API-Key`** header or **`Authorization: Bearer <JWT>`**. The MCP server resolves the user from these headers and applies the same rate limits and session ownership rules.
+
+### Cursor
+
+To use the sandbox MCP server in Cursor, add an entry to your MCP config (e.g. **Cursor Settings → MCP** or `~/.cursor/mcp.json`) so the client points at your running API:
+
+```json
+{
+  "mcpServers": {
+    "sandbox": {
+      "url": "http://localhost:8000/mcp",
+      "headers": {
+        "X-API-Key": "your-api-key"
+      }
+    }
+  }
+}
+```
+
+Replace `your-api-key` with a key from your `API_KEYS` env (or use `Authorization: Bearer <token>` with a JWT). Ensure the API is running (e.g. `uvicorn app.main:app --host 0.0.0.0 --port 8000`) before connecting.
+
 ## Security notes
 
 1. **Auth**: Use strong `JWT_SECRET` or `API_KEYS` in production; never rely on defaults.
