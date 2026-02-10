@@ -5,13 +5,13 @@ services:
       context: .
       dockerfile: Dockerfile.agent
     image: sandbox-api-agent:latest
-    command: ["true"]
+    command: [ "true" ]
     restart: "no"
 
   api:
     build: .
-    ports:
-      - "${PORT:-8000}:8000"
+    # ports:
+    #   - "${PORT:-8000}:8000"
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
     environment:
